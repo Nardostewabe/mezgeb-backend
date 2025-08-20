@@ -1,7 +1,10 @@
-const express = require('express');
-const cors = require('cors');
+import express from "express";
+import cors from "cors";
+import admin from "firebase-admin";
+import dotenv from "dotenv";
 
-const admin = require("firebase-admin");
+dotenv.config();
+
 
 if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
   throw new Error("FIREBASE_SERVICE_ACCOUNT environment variable is missing!");
@@ -117,6 +120,47 @@ app.get("/items/gender/:gender", async (req, res) => {
   }
 });
 
+//filter by category for genders
+app.get("/items/:gender/category/:categoryName", async (req, res) => {
+  try {
+    
+    // 1. Extract both gender and category from the URL parameters
+    const { gender, categoryName } = req.params;
+
+    // 2. Validate the input to ensure both params are present
+    if (!gender || !categoryName) {
+      return res
+        .status(400)
+        .send("Both gender and category name are required.");
+    }
+
+    // Validate 
+    const validGenders = ["male", "female", "unisex"];
+    if (!validGenders.includes(gender.toLowerCase())) {
+        return res.status(400).send("Invalid gender specified.");
+    }
+
+    const itemsRef = db.collection("All_Items");
+
+    // 3. Chain .where() clauses to create a compound query
+    // This finds documents WHERE gender matches AND category.name matches
+    const q = itemsRef
+      .where("gender", "==", gender.toLowerCase())
+      .where("category.name", "==", categoryName.toLowerCase());
+
+    const querySnapshot = await q.get();
+
+    const items = [];
+    querySnapshot.forEach((doc) => {
+      items.push({ id: doc.id, ...doc.data() });
+    });
+
+    res.status(200).json(items);
+  } catch (err) {
+    console.error("Error fetching items by gender and category:", err);
+    res.status(500).send("Error fetching items");
+  }
+});
 
 //filter by category and subcategory
 app.get("/items/filter/:categoryName/:subCategoryName", async (req, res) => {
@@ -205,3 +249,5 @@ app.get("/search", async (req, res) => {
     res.status(500).send("Error performing search");
   }
 });
+
+//filtering by category
