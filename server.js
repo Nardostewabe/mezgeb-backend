@@ -122,7 +122,9 @@ app.get("/items/gender/:gender", async (req, res) => {
 
 //filter by category for genders
 app.get("/items/:gender/category/:categoryName", async (req, res) => {
+  console.log("Recieved request to filter from category ", req.params);
   try {
+    console.log("Recieved request to filter from category in try", req.params);
     
     // 1. Extract both gender and category from the URL parameters
     const { gender, categoryName } = req.params;
